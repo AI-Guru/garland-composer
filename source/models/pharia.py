@@ -1,3 +1,5 @@
+# Base on code adapted from https://huggingface.co/Aleph-Alpha/Pharia-1-LLM-7B-control-hf/blob/main/modeling_pharia.py.
+
 from dataclasses import dataclass, field
 from typing import Optional, Any
 import math
