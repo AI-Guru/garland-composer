@@ -3,6 +3,7 @@
 
 ![](assets/garlandcomposer.jpg)
 
+This Streamlit application demonstrates how to compose music using Small Language Models. Designed for users of all skill levels, it provides a simple and interactive interface to generate melodies, harmonies, and full compositions using AI. The application showcases the potential of Small Language Models in the field of music composition.
 
 ## How to install
 
