@@ -62,6 +62,9 @@ def main():
     # Add a picture.
     column = columns.pop(0)
     with column:
+        st.write(" ")
+        st.write(" ")
+        st.write(" ")
         st.image("garland.jpg", use_column_width=True)
 
     # Add a horizontal line.
@@ -92,7 +95,7 @@ def main():
     token_sequence = st.session_state.token_sequence
 
     # Columns for the buttons.
-    columns = st.columns(4)
+    columns = st.columns(5)
 
     # Add a button to generate the next bar.
     column = columns.pop(0)
@@ -101,10 +104,17 @@ def main():
             token_sequence = extend_sequence(model, token_sequence, temperature)
             refresh(token_sequence, bpm, instrument)
 
+    # Add a button to compose long.
+    column = columns.pop(0)
+    with column:
+        if st.button("Auto compose", use_container_width=True):
+            token_sequence = auto_compose(model, token_sequence, temperature)
+            refresh(token_sequence, bpm, instrument)
+
     # Add a button to remove the last bar.
     column = columns.pop(0)
     with column:
-        if st.button("Remove last bar", use_container_width=True):
+        if st.button("Remove last", use_container_width=True):
             token_sequence = shortened_sequence(token_sequence)
             refresh(token_sequence, bpm, instrument)
 
@@ -123,7 +133,7 @@ def main():
         with column:
             midi_file_content = st.session_state.midi_file_content
             if st.download_button(
-                label="Download MIDI file",
+                label="Download MIDI",
                 data=midi_file_content,
                 file_name="music.mid",
                 mime="audio/midi",
@@ -131,22 +141,48 @@ def main():
             ):
                 pass
 
-    # Display a picture
+    # Add a horizontal line.
+    st.markdown("---")
+
+    # Display the piano roll.
     if "piano_roll" in st.session_state and st.session_state.piano_roll is not None:
         st.image(st.session_state.piano_roll)
 
     # Display an audio player.
     if "wave" in st.session_state and st.session_state.wave is not None:
-        st.audio(st.session_state.wave, format="audio/wav", sample_rate=44100)
+        st.audio(st.session_state.wave, format="audio/wav", sample_rate=44100, autoplay=True)
+
+    # Add a horizontal line.
+    st.markdown("---")
+
+    # Set the text color to (255, 31, 75).
+    if token_sequence.endswith("GARLAND_END"):
+        st.write("The AI believes that the music is finished.")
+    else:
+        st.write("The AI believes that the music is not finished.")
+
+
+def auto_compose(model, token_sequence, temperature):
+
+    max_iterations = 100
+    for _ in range(max_iterations):
+        token_sequence = extend_sequence(model, token_sequence, temperature)
+        if token_sequence.endswith("GARLAND_END"):
+            break
+    return token_sequence
 
 
 def extend_sequence(model, token_sequence, temperature):
+
+    # Replace the last GARLAND_END token with NEXT.
+    if token_sequence.endswith("GARLAND_END"):
+        token_sequence = token_sequence.replace("GARLAND_END", "NEXT")
 
     # The maximum length of the generated music.
     max_length = 16_384
 
     # When to stop the generation.
-    end_tokens = ["NEXT"]
+    end_tokens = ["NEXT", "GARLAND_END"]
 
     # Compose the music iterativelybar by bar.
     output_dict = model.generate(
@@ -154,7 +190,7 @@ def extend_sequence(model, token_sequence, temperature):
         temperature=temperature,
         max_length=max_length,
         end_tokens=end_tokens,
-        forbidden_tokens=["[PAD]", "[EOS]", "GARLAND_END"],
+        forbidden_tokens=["[PAD]", "[EOS]"],
         return_structured_output=True
     )
     output = output_dict["output"]
@@ -165,7 +201,7 @@ def shortened_sequence(token_sequence):
 
     # Find the position of the next to last NEXT token.
     next_tokens = token_sequence.split()
-    next_positions = [i for i, x in enumerate(next_tokens) if x == "NEXT"]
+    next_positions = [i for i, x in enumerate(next_tokens) if x == "NEXT" or x == "GARLAND_END"]
     if len(next_positions) <= 1:
         token_sequence = "GARLAND_START"
     else:
