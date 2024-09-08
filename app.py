@@ -18,7 +18,9 @@ midi_instruments = {
 # Load the model once and cache it.
 @st.cache_resource
 def load_model():
-    model = LanguageModel("TristanBehrens/bach-garland-mambaplus")
+    #model_id = "TristanBehrens/bach-garland-mambaplus"
+    model_id = "TristanBehrens/bach-garland-pharia"
+    model = LanguageModel(model_id)
     return model
 model = load_model()
 
@@ -50,8 +52,8 @@ def main():
 
         # Add a title.
         st.title("Garland Composer")
-        linkedin_url = "https://huggingface.co/TristanBehrens/bach-garland-mambaplus/"
-        x_url = "https://huggingface.co/TristanBehrens/bach-garland-mambaplus/"
+        linkedin_url = "https://www.linkedin.com/dr-tristan-behrens-734967a2/"
+        x_url = "https://x.com/DrTBehrens"
         st.write(f"By Dr. Tristan Behrens. Find me on [LinkedIn]({linkedin_url}) and [X]({x_url}).")
         hf_url = "https://huggingface.co/TristanBehrens/bach-garland-mambaplus/"
         st.write(f"Model available on [Hugging Face]({hf_url}).")
