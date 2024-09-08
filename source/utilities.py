@@ -2,6 +2,111 @@ import copy
 import note_seq
 from PIL import Image
 import tempfile
+import os
+import colorama
+from omegaconf import DictConfig, OmegaConf
+import torch
+from typing import List, Tuple, Dict
+from dacite import from_dict
+from collections.abc import MutableMapping
+import sys
+
+
+# NOTE: Imported from helibrunna.
+def display_logo():
+    """
+    Display the logo by printing it line by line with a cyberpunk color scheme.
+
+    Raises:
+        FileNotFoundError: If the logo file is missing.
+    """
+
+    # Get the path of this script and use it to find the logo.
+    script_path = os.path.dirname(os.path.realpath(__file__))
+    search_path = os.path.dirname(script_path)
+
+    # Load the logo.
+    logo_path = os.path.join(search_path, "assets", "asciilogo.txt")
+    if not os.path.exists(logo_path):
+        raise FileNotFoundError("The logo file is missing.")
+    with open(logo_path, "r") as f:
+        logo = f.read()
+
+    # Print the logo line by line. Use colorama to colorize the output. Use a cyberpunk color scheme.
+    for line_index, line in enumerate(logo.split("\n")):
+        color = colorama.Fore.GREEN
+        style = colorama.Style.BRIGHT if line_index % 2 == 0 else colorama.Style.NORMAL
+        print(color + style + line)
+    print(colorama.Style.RESET_ALL)
+
+
+# NOTE: Imported from helibrunna.
+def model_from_config(model_config: DictConfig, device:str) -> torch.nn.Module:
+    """
+    Create a model based on the provided model configuration.
+
+    Args:
+        model_config (DictConfig): The configuration for the model.
+
+    Returns:
+        The created model.
+
+    Raises:
+        ValueError: If the model type is unknown.
+    """
+    
+    # Get the model type from the configuration.
+    model_type = model_config.get("type", "xLSTMLMModel")
+    
+    # Create the xLSTMLMModel.
+    if model_type == "xLSTMLMModel":
+        print("Creating xLSTMLMModel...")
+        from xlstm.xlstm_lm_model import xLSTMLMModel, xLSTMLMModelConfig
+        
+        # If there is no GPU, use the vanilla backend.
+        if not torch.cuda.is_available():
+            #model_config.backend = "vanilla"
+            model_config.slstm_block.slstm.backend = "vanilla"
+            model_config.mlstm_block.mlstm.backend = "vanilla"
+        model_config_object = from_dict(xLSTMLMModelConfig, OmegaConf.to_container(model_config))
+        
+        # Create the model.
+        model = xLSTMLMModel(model_config_object)
+        model.reset_parameters()
+    
+    # Create the GPT2LMModel.
+    elif model_type == "gpt2":
+        print("Creating GPT2LMModel...")
+        from .models.gpttwo import GPT2LMModel, GPT2LMModelConfig
+        model_config_object = from_dict(GPT2LMModelConfig, OmegaConf.to_container(model_config))
+        model = GPT2LMModel(model_config_object)
+    
+    # Create the MambaLM.
+    elif model_type == "mamba":
+        print("Creating Mamba LM...")
+        from mambapy.lm import LM, MambaConfig
+        model_config_object = from_dict(MambaConfig, OmegaConf.to_container(model_config))
+        model = LM(model_config_object, model_config.vocab_size)
+    
+    # Create the Transformer.
+    elif model_type == "transformer":
+        from .models.transformer import TransformerConfig, Transformer
+        model_config_object = from_dict(TransformerConfig, OmegaConf.to_container(model_config))
+        model = Transformer(model_config_object)
+    
+    # Create a Pharia instance.
+    elif model_type == "pharia":
+        from .models.pharia import PhariaConfig, PhariaModel
+        model_config_object = from_dict(PhariaConfig, OmegaConf.to_container(model_config))
+        model = PhariaModel(model_config_object)
+    
+    # Create a TransformerXL instance.
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+    
+    # Move the model to the device.
+    model.to(device)
+    return model
 
 
 def convert_tokens_to_songdata(tokens):

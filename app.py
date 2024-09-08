@@ -1,9 +1,6 @@
 import streamlit as st
-import sys
-sys.path.append("../helibrunna")
-from source.onnxlanguagemodel import OnnxLanguageModel
 from source.languagemodel import LanguageModel
-from utilities import (
+from source.utilities import (
     convert_tokens_to_songdata,
     convert_songdata_to_notesequence,
     convert_songdata_to_pianoroll,
