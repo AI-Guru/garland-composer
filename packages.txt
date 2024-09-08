@@ -1,0 +1,6 @@
+libfluidsynth3
+fluid-soundfont-gm
+build-essential
+libasound2-dev
+libjack-dev
+ffmpeg
