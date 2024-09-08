@@ -154,9 +154,26 @@ def convert_songdata_to_pianoroll(song_data):
     image = Image.new("RGB", (width, height), (14, 17, 23))
 
     # Define some colors.
-    colors = [
-        (255, 75, 75),
-    ]
+    base_color = (255, 75, 75)
+    adjustments = [1.2, 1.0, 0.8, 0.6]
+    colors = []
+    for adjustment in adjustments:
+        import colorsys
+        rgb = base_color
+        rgb = [float(c) / 255.0 for c in rgb]
+        hsv = colorsys.rgb_to_hsv(*rgb)
+        # Rotate the hue.
+        offset = (adjustment - 1.0) * 0.1
+        hsv = (hsv[0] + offset, hsv[1], hsv[2])
+        rgb = colorsys.hsv_to_rgb(*hsv)
+        rgb = tuple([int(255.0 * c) for c in rgb])
+        colors += [rgb]
+        print("")
+
+    for color in colors:
+        print(color)
+        
+
 
     # Draw the grid.
     for track_index, track_data in enumerate(song_data["tracks"]):

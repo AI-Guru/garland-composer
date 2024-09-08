@@ -21,16 +21,13 @@ midi_instruments = {
 # Load the model once and cache it.
 @st.cache_resource
 def load_model():
-    print("Loading model...")
     model = LanguageModel("TristanBehrens/bach-garland-mambaplus")
-    print("Model loaded.")
     return model
 model = load_model()
 
 
 # Initialize token_sequence in session state if it doesn't exist
 if "token_sequence" not in st.session_state:
-    print("Initializing state...")
     st.session_state.token_sequence = "GARLAND_START"
     st.session_state.song_data = None
     st.session_state.piano_roll = None
@@ -44,8 +41,31 @@ if "token_sequence" not in st.session_state:
 
 # Define the main function.
 def main():
+
+    columns = st.columns([0.7, 0.3])
+
     # Set up the Streamlit application
-    st.title("Simple Streamlit Application")
+    column = columns.pop(0)
+    with column:
+
+        # Change the colors of the a-tag to (255, 75, 75).
+        st.markdown("<style>a:link { color: #FF4B4B; } a:visited { color: #FF4B4B; }</style>", unsafe_allow_html=True)
+
+        # Add a title.
+        st.title("Garland Composer")
+        linkedin_url = "https://huggingface.co/TristanBehrens/bach-garland-mambaplus/"
+        x_url = "https://huggingface.co/TristanBehrens/bach-garland-mambaplus/"
+        st.write(f"By Dr. Tristan Behrens. Find me on [LinkedIn]({linkedin_url}) and [X]({x_url}).")
+        hf_url = "https://huggingface.co/TristanBehrens/bach-garland-mambaplus/"
+        st.write(f"Model available on [Hugging Face]({hf_url}).")
+
+    # Add a picture.
+    column = columns.pop(0)
+    with column:
+        st.image("garland.jpg", use_column_width=True)
+
+    # Add a horizontal line.
+    st.markdown("---")
 
     # Create two columns.
     columns = st.columns(3)
@@ -113,7 +133,7 @@ def main():
 
     # Display a picture
     if "piano_roll" in st.session_state and st.session_state.piano_roll is not None:
-        st.image(st.session_state.piano_roll, caption="Sample Image")
+        st.image(st.session_state.piano_roll)
 
     # Display an audio player.
     if "wave" in st.session_state and st.session_state.wave is not None:
