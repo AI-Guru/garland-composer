@@ -267,18 +267,11 @@ def convert_songdata_to_pianoroll(song_data):
         rgb = base_color
         rgb = [float(c) / 255.0 for c in rgb]
         hsv = colorsys.rgb_to_hsv(*rgb)
-        # Rotate the hue.
         offset = (adjustment - 1.0) * 0.1
         hsv = (hsv[0] + offset, hsv[1], hsv[2])
         rgb = colorsys.hsv_to_rgb(*hsv)
         rgb = tuple([int(255.0 * c) for c in rgb])
         colors += [rgb]
-        print("")
-
-    for color in colors:
-        print(color)
-        
-
 
     # Draw the grid.
     for track_index, track_data in enumerate(song_data["tracks"]):
@@ -318,6 +311,11 @@ def convert_notesequence_to_midi(note_sequence, filename="output.mid"):
 
     if len(note_sequence.notes) == 0:
         return None
+
+    # Set all the programs and instruments to 0.
+    for note in note_sequence.notes:
+        note.program = 0
+        note.instrument = 0
 
     # Returns the file content of the midi file.
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:

@@ -19,7 +19,8 @@ midi_instruments = {
 @st.cache_resource
 def load_model():
     #model_id = "TristanBehrens/bach-garland-mambaplus"
-    model_id = "TristanBehrens/bach-garland-pharia"
+    #model_id = "TristanBehrens/bach-garland-pharia"
+    model_id = "TristanBehrens/bach-garland-phariaplus"
     model = LanguageModel(model_id)
     return model
 model = load_model()
