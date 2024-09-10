@@ -5,6 +5,8 @@
 
 This Streamlit application demonstrates how to compose music using Small Language Models. Designed for users of all skill levels, it provides a simple and interactive interface to generate melodies, harmonies, and full compositions using AI. The application showcases the potential of Small Language Models in the field of music composition.
 
+![](assets/screenshot.png)
+
 ## How to install
 
 This repo is tested on Unix with and without GPU acceleration. It is very likely that the project will work on Mac. As always, if you want to run it on Windows, I suggest getting another machine. 🤗
@@ -16,6 +18,12 @@ conda create -n "garland-composer" python=3.11.9
 conda activate garland-composer
 pip install -r pre-requirements.txt
 pip install -r requirements.txt
+```
+
+After that you can run with:
+
+```
+sh start.sh
 ```
 
 ## More Generative Music Models
