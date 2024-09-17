@@ -16,6 +16,7 @@
 
  
 import streamlit as st
+from streamlit.components.v1 import html
 from source.languagemodel import LanguageModel
 from source.utilities import (
     convert_tokens_to_songdata,
@@ -37,7 +38,8 @@ midi_instruments = {
 def load_model():
     #model_id = "TristanBehrens/bach-garland-mambaplus"
     #model_id = "TristanBehrens/bach-garland-pharia"
-    model_id = "TristanBehrens/bach-garland-phariaplus"
+    #model_id = "TristanBehrens/bach-garland-phariaplus"
+    model_id = "TristanBehrens/bach-garland-phariaplusplus"
     model = LanguageModel(model_id)
     return model
 model = load_model()
@@ -59,6 +61,7 @@ if "token_sequence" not in st.session_state:
 # Define the main function.
 def main():
 
+    # Create two columns.
     columns = st.columns([0.7, 0.3])
 
     # Set up the Streamlit application
@@ -179,6 +182,7 @@ def main():
         st.write("The AI believes that the music is not finished.")
 
 
+
 def auto_compose(model, token_sequence, temperature):
 
     max_iterations = 100
@@ -229,32 +233,38 @@ def shortened_sequence(token_sequence):
 
 def refresh(token_sequence="GARLAND_START", bpm=120, instrument="Piano"):
 
-    # Get the token sequence into the session state.
+    try:
+
+        # Convert to song data.
+        song_data = convert_tokens_to_songdata(token_sequence)
+        song_data["bpm"] = bpm
+
+        # Set the instrument.
+        for track in song_data["tracks"]:
+            track["instrument"] = midi_instruments[instrument]
+
+        # Convert to piano roll.
+        piano_roll = convert_songdata_to_pianoroll(song_data)
+
+        # Convert to note sequence.
+        note_sequence = convert_songdata_to_notesequence(song_data)
+
+        # Play the note sequence.
+        wave = convert_notesequence_to_wave(note_sequence)
+
+        # Get the MIDI file content.
+        midi_file_content = convert_notesequence_to_midi(note_sequence)
+    
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+        return
+
+    # Update the session state.
     st.session_state.token_sequence = token_sequence
-
-    # Convert to song data.
-    song_data = convert_tokens_to_songdata(token_sequence)
-    song_data["bpm"] = bpm
     st.session_state.song_data = song_data
-
-    # Set the instrument.
-    for track in song_data["tracks"]:
-        track["instrument"] = midi_instruments[instrument]
-
-    # Convert to piano roll.
-    piano_roll = convert_songdata_to_pianoroll(song_data)
     st.session_state.piano_roll = piano_roll
-
-    # Convert to note sequence.
-    note_sequence = convert_songdata_to_notesequence(song_data)
     st.session_state.note_sequence = note_sequence
-
-    # Play the note sequence.
-    wave = convert_notesequence_to_wave(note_sequence)
     st.session_state.wave = wave
-
-    # Get the MIDI file content.
-    midi_file_content = convert_notesequence_to_midi(note_sequence)
     st.session_state.midi_file_content = midi_file_content
 
     # Rerun the app.

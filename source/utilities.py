@@ -274,6 +274,18 @@ def convert_songdata_to_pianoroll(song_data):
     # Create the image.
     image = Image.new("RGB", (width, height), (14, 17, 23))
 
+    # Render the bars. Draw rectangles for the bars. Alternate the colors.
+    bar_background_colors = [(5, 5, 25), (10, 10, 50)]
+    for bar_index in range(num_bars):
+        x1 = bar_index * 32
+        y1 = 0
+        x2 = x1 + 32
+        y2 = height
+        color = bar_background_colors[bar_index % 2]
+        image.paste(color, (x1, y1, x2, y2))
+
+
+
     # Define some colors.
     base_color = (255, 75, 75)
     adjustments = [1.2, 1.0, 0.8, 0.6]
@@ -289,7 +301,7 @@ def convert_songdata_to_pianoroll(song_data):
         rgb = tuple([int(255.0 * c) for c in rgb])
         colors += [rgb]
 
-    # Draw the grid.
+    # Draw the Notes.
     for track_index, track_data in enumerate(song_data["tracks"]):
         color = colors[track_index % len(colors)]
         for bar_index, bar_data in enumerate(track_data["bars"]):
@@ -329,9 +341,9 @@ def convert_notesequence_to_midi(note_sequence, filename="output.mid"):
         return None
 
     # Set all the programs and instruments to 0.
-    for note in note_sequence.notes:
-        note.program = 0
-        note.instrument = 0
+    #for note in note_sequence.notes:
+    #    note.program = 0
+    #    note.instrument = 0
 
     # Returns the file content of the midi file.
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:
