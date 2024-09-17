@@ -26,6 +26,9 @@ from source.utilities import (
     convert_notesequence_to_midi
 )
 
+# Set the page layout to "wide"
+st.set_page_config(layout="wide")
+
 # Define the MIDI instruments.
 midi_instruments = {
     "Harpsichord": 6,
