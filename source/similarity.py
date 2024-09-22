@@ -144,9 +144,9 @@ def find_similar_samples(token_sequence, top_n=10):
     progress_bar = tqdm.tqdm(total=len(rows))
     for row in rows:
         row_image = Image.frombytes(image_mode, (row[2], row[3]), row[1])
-        overlap_score, range_score = compute_scores(image, row_image)
+        overlap_score, range_score, overlap = compute_scores(image, row_image)
         # Add the similarity score to the list.
-        similar_samples.append((overlap_score, range_score, row[0]))
+        similar_samples.append((overlap_score, range_score, row[0], overlap))
         # Sort by overlap score ascending.
         similar_samples.sort(key=lambda x: x[0], reverse=True)
         # Keep only the top n similar samples.
@@ -173,6 +173,8 @@ def find_similar_samples(token_sequence, top_n=10):
         image_width = row[2]
         image_height = row[3]
         image = Image.frombytes(image_mode, (image_width, image_height), image_bytes)
+        overlap = sample[3]
+        colorize_overlap(image, overlap)
         image.save(os.path.join(output_path, f"similar_sample_{i}.png"))
         connection.close()
 
@@ -183,6 +185,16 @@ def find_similar_samples(token_sequence, top_n=10):
 
     # Return the score.
     return similar_samples[0][0]
+
+
+def colorize_overlap(image, overlap):
+    # Use the overlap to change the background of the first overlap columns form black to dark red.
+    for j in range(overlap):
+        for y in range(image.size[1]):
+            color = image.getpixel((j, y))
+            if color == (0, 0, 0):
+                image.putpixel((j, y), (64, 0, 0))
+
 
 
 def match_for_similarity(token_sequence, image):
@@ -263,6 +275,7 @@ def compute_scores(image1, image2, min_pitch1=None, max_pitch1=None, min_pitch2=
         # Compare the slices.
         if slice1.tobytes() == slice2.tobytes():
             matching_columns += 1
+
     overlap_score = matching_columns / max_columns
 
     # Compute the range scores.
@@ -277,7 +290,7 @@ def compute_scores(image1, image2, min_pitch1=None, max_pitch1=None, min_pitch2=
                 count += 1
         range_score = count / (total_max_pitch - total_min_pitch)
 
-    return overlap_score, range_score
+    return overlap_score, range_score, matching_columns
 
 
 def remove_black_rows(image):
