@@ -244,7 +244,7 @@ def convert_songdata_to_notesequence(song_data:dict, quantize_steps_per_quarter=
     return note_sequence
 
 
-def convert_songdata_to_pianoroll(song_data):
+def convert_songdata_to_pianoroll(song_data, monochrome=False, return_min_max=False, scale=4):
 
     # The bars are 4/4 and the quantization is 8 steps per quarter, aka 32 steps per bar.
     # We will render a grid. The height is 64 pixels. The width is 32 pixels per bar
@@ -272,34 +272,42 @@ def convert_songdata_to_pianoroll(song_data):
     height = 1 + max_note - min_note
 
     # Create the image.
-    image = Image.new("RGB", (width, height), (14, 17, 23))
+    if monochrome:
+        image = Image.new("RGB", (width, height), (0, 0, 0))
+    else:
+        image = Image.new("RGB", (width, height), (14, 17, 23))
 
     # Render the bars. Draw rectangles for the bars. Alternate the colors.
-    bar_background_colors = [(5, 5, 25), (10, 10, 50)]
-    for bar_index in range(num_bars):
-        x1 = bar_index * 32
-        y1 = 0
-        x2 = x1 + 32
-        y2 = height
-        color = bar_background_colors[bar_index % 2]
-        image.paste(color, (x1, y1, x2, y2))
-
-
+    if monochrome:
+        bar_background_colors = [(0, 0, 0)]
+    else:
+        bar_background_colors = [(5, 5, 25), (10, 10, 50)]
+        for bar_index in range(num_bars):
+            x1 = bar_index * 32
+            y1 = 0
+            x2 = x1 + 32
+            y2 = height
+            color = bar_background_colors[bar_index % 2]
+            image.paste(color, (x1, y1, x2, y2))
 
     # Define some colors.
-    base_color = (255, 75, 75)
-    adjustments = [1.2, 1.0, 0.8, 0.6]
-    colors = []
-    for adjustment in adjustments:
-        import colorsys
-        rgb = base_color
-        rgb = [float(c) / 255.0 for c in rgb]
-        hsv = colorsys.rgb_to_hsv(*rgb)
-        offset = (adjustment - 1.0) * 0.1
-        hsv = (hsv[0] + offset, hsv[1], hsv[2])
-        rgb = colorsys.hsv_to_rgb(*hsv)
-        rgb = tuple([int(255.0 * c) for c in rgb])
-        colors += [rgb]
+    if monochrome:
+        base_color = (255, 255, 255)
+        colors = [base_color]
+    else:
+        base_color = (255, 75, 75)
+        adjustments = [1.2, 1.0, 0.8, 0.6]
+        colors = []
+        for adjustment in adjustments:
+            import colorsys
+            rgb = base_color
+            rgb = [float(c) / 255.0 for c in rgb]
+            hsv = colorsys.rgb_to_hsv(*rgb)
+            offset = (adjustment - 1.0) * 0.1
+            hsv = (hsv[0] + offset, hsv[1], hsv[2])
+            rgb = colorsys.hsv_to_rgb(*hsv)
+            rgb = tuple([int(255.0 * c) for c in rgb])
+            colors += [rgb]
 
     # Draw the Notes.
     for track_index, track_data in enumerate(song_data["tracks"]):
@@ -314,9 +322,11 @@ def convert_songdata_to_pianoroll(song_data):
                     image.putpixel((x + i, y), color)
 
     # Resize the image. Use nearest neighbor for pixel art.
-    factor = 4
-    image = image.resize((width * factor, height * factor), Image.NEAREST)
+    if scale !=1:
+        image = image.resize((width * scale, height * scale), Image.NEAREST)
 
+    if return_min_max:
+        return image, min_note, max_note
     return image
 
 

@@ -42,7 +42,8 @@ def load_model():
     #model_id = "TristanBehrens/bach-garland-mambaplus"
     #model_id = "TristanBehrens/bach-garland-pharia"
     #model_id = "TristanBehrens/bach-garland-phariaplus"
-    model_id = "TristanBehrens/bach-garland-phariaplusplus"
+    #model_id = "TristanBehrens/bach-garland-phariaplusplus"
+    model_id = "TristanBehrens/bach-garland-phariaplusplus-1epoch"
     model = LanguageModel(model_id)
     return model
 model = load_model()
@@ -99,7 +100,7 @@ def main():
     # Add a slider to control the temperature.
     state_temperature = st.session_state.temperature
     with columns.pop(0):
-        temperature = st.slider("Temperature", 0.0, 1.0, state_temperature)
+        temperature = st.slider("Temperature", 0.0, 2.0, state_temperature)
     st.session_state.temperature = temperature
 
     # Add a slider to control the bpm.
@@ -118,12 +119,20 @@ def main():
     token_sequence = st.session_state.token_sequence
 
     # Columns for the buttons.
-    columns = st.columns(6)
+    columns = st.columns(7)
 
     # Add a button to generate the next bar.
     column = columns.pop(0)
     with column:
         if st.button("Add a bar", use_container_width=True):
+            token_sequence = extend_sequence(model, token_sequence, temperature)
+            refresh(token_sequence, bpm, instrument)
+
+    # Add a button to redo the last bar.
+    column = columns.pop(0)
+    with column:
+        if st.button("Redo last", use_container_width=True):
+            token_sequence = shortened_sequence(token_sequence)
             token_sequence = extend_sequence(model, token_sequence, temperature)
             refresh(token_sequence, bpm, instrument)
 
@@ -205,7 +214,7 @@ def auto_compose(model, token_sequence, temperature):
 def long_compose(model, token_sequence, temperature):
 
     max_iterations = 100
-    min_iterations = 20
+    min_iterations = 24
 
     should_continue = True
     while should_continue:
