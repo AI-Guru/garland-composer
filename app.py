@@ -118,7 +118,7 @@ def main():
     token_sequence = st.session_state.token_sequence
 
     # Columns for the buttons.
-    columns = st.columns(5)
+    columns = st.columns(6)
 
     # Add a button to generate the next bar.
     column = columns.pop(0)
@@ -132,6 +132,13 @@ def main():
     with column:
         if st.button("Auto compose", use_container_width=True):
             token_sequence = auto_compose(model, token_sequence, temperature)
+            refresh(token_sequence, bpm, instrument)
+
+        # Add a button to compose long.
+    column = columns.pop(0)
+    with column:
+        if st.button("Long compose", use_container_width=True):
+            token_sequence = long_compose(model, token_sequence, temperature)
             refresh(token_sequence, bpm, instrument)
 
     # Add a button to remove the last bar.
@@ -193,6 +200,28 @@ def auto_compose(model, token_sequence, temperature):
         token_sequence = extend_sequence(model, token_sequence, temperature)
         if token_sequence.endswith("GARLAND_END"):
             break
+    return token_sequence
+
+def long_compose(model, token_sequence, temperature):
+
+    max_iterations = 100
+    min_iterations = 20
+
+    should_continue = True
+    while should_continue:
+        token_sequence = "GARLAND_START"
+        for iterations in range(max_iterations):
+            print(f"Iteration {iterations}         ", end="\r")
+            token_sequence = extend_sequence(model, token_sequence, temperature)
+            if token_sequence.endswith("GARLAND_END"):
+                break
+        print()
+        if iterations < min_iterations:
+            should_continue = True
+            print("Restarting...")
+        else:
+            should_continue = False
+            print("Finished.")
     return token_sequence
 
 
