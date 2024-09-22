@@ -26,6 +26,7 @@ from source.utilities import (
     convert_notesequence_to_midi
 )
 from source.similarity import find_similar_samples
+from source import musictheory
 
 # Set the page layout to "wide"
 st.set_page_config(layout="wide")
@@ -42,7 +43,9 @@ available_models = [
     "TristanBehrens/bach-garland-pharia",
     "TristanBehrens/bach-garland-phariaplus",
     "TristanBehrens/bach-garland-phariaplusplus",
-    "TristanBehrens/bach-garland-phariaplusplus-1epoch"
+    "TristanBehrens/bach-garland-phariaplusplus-1epoch",
+    "TristanBehrens/bach-garland-phariaplusplus-2epochs",
+    "TristanBehrens/bach-garland-phariaplusplus-3epochs",
 ]
 
 # Load the model once and cache it.
@@ -53,6 +56,9 @@ def load_model():
     #model_id = "TristanBehrens/bach-garland-phariaplus"
     #model_id = "TristanBehrens/bach-garland-phariaplusplus"
     model_id = "TristanBehrens/bach-garland-phariaplusplus-1epoch"
+    #model_id = "TristanBehrens/bach-garland-phariaplusplus-2epochs"
+    #model_id = "TristanBehrens/bach-garland-phariaplusplus-3epochs"
+
     model = LanguageModel(model_id)
     return model
 model = load_model()
@@ -70,6 +76,8 @@ if "token_sequence" not in st.session_state:
     st.session_state.bpm = 100
     st.session_state.instrument = "Piano"
     st.session_state.random_seed = -1
+    st.session_state.root_note = "C"
+    st.session_state.mode = "major"
     st.session_state.similarity_score = 0.0
 
 
@@ -106,7 +114,7 @@ def main():
     st.markdown("---")
 
     # Create two columns.
-    columns = st.columns(4)
+    columns = st.columns(6)
 
     # Add a slider to control the temperature.
     state_temperature = st.session_state.temperature
@@ -131,6 +139,20 @@ def main():
     with columns.pop(0):
         random_seed = st.text_area("Seed", st.session_state.random_seed)
     st.session_state.random_seed = random_seed
+
+    # Pulldown for notes.
+    notes = musictheory.notes
+    root_note = st.session_state.root_note
+    with columns.pop(0):
+        note = st.selectbox("Note", notes, index=notes.index(root_note))
+    st.session_state.root_note = note
+
+    # Pulldown for modes.
+    modes = musictheory.modes
+    mode = st.session_state.mode
+    with columns.pop(0):
+        mode = st.selectbox("Mode", modes, index=modes.index(mode))
+    st.session_state.mode = mode
 
     # Get the token sequence from the session state.
     token_sequence = st.session_state.token_sequence
@@ -234,7 +256,7 @@ def auto_compose(model, token_sequence, temperature):
 def long_compose(model, token_sequence, temperature):
 
     max_iterations = 100
-    min_iterations = 24
+    min_iterations = 16
 
     should_continue = True
     while should_continue:
@@ -277,6 +299,21 @@ def extend_sequence(model, token_sequence, temperature):
         random.seed(random_seed)
         torch.manual_seed(random_seed)
         np.random.seed(random_seed)
+        pass
+
+    # Get the root note and mode.
+    root_note = st.session_state.root_note
+    mode = st.session_state.mode
+    forbidden_pitches = musictheory.get_inverted_pitches(root_note, mode)
+    import librosa
+    forbidden_tokens = [f"NOTE_ON={pitch}" for pitch in forbidden_pitches]
+    forbidden_tokens_readable = [f"{root_note}{mode}"] + [librosa.midi_to_note(pitch) for pitch in forbidden_pitches]
+    print(f"Forbidden pitches: {forbidden_tokens_readable}")
+
+    allowed_pitches = musictheory.get_pitches(root_note, mode)
+    allowed_tokens = [f"NOTE_ON={pitch}" for pitch in allowed_pitches]
+    allowed_tokens_readable = [librosa.midi_to_note(pitch) for pitch in allowed_pitches]
+    print(f"Allowed pitches: {allowed_tokens_readable}")
 
     # Compose the music iterativelybar by bar.
     output_dict = model.generate(
@@ -284,7 +321,7 @@ def extend_sequence(model, token_sequence, temperature):
         temperature=temperature,
         max_length=max_length,
         end_tokens=end_tokens,
-        forbidden_tokens=["[PAD]", "[EOS]"],
+        forbidden_tokens=["[PAD]", "[EOS]"] + forbidden_tokens,
         return_structured_output=True
     )
     output = output_dict["output"]

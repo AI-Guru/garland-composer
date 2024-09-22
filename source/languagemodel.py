@@ -201,8 +201,12 @@ class LanguageModel:
 
         # Mask the forbidden tokens.
         for forbidden_token in forbidden_tokens:
-            assert forbidden_token in self.tokenizer.vocab
+            if forbidden_token not in self.tokenizer.vocab:
+                #print(f"Warning: {forbidden_token} not in the vocabulary.")
+                continue
+            assert forbidden_token in self.tokenizer.vocab, f"{forbidden_token} not in the vocabulary."
             ids_to_mask.extend(self.tokenizer(forbidden_token).input_ids)
+        #print(ids_to_mask)
 
         # Generate the continuation.
         start_time = time.time()
@@ -220,6 +224,10 @@ class LanguageModel:
 
             # Mask the tokens.
             outputs[:, :, self.tokenizer.all_special_ids] = float("-inf")
+
+            # Mask the forbidden tokens.
+            if len(ids_to_mask) > 0:
+                outputs[:, :, ids_to_mask] = float("-inf")
 
             # Use the temperature to sample from the distribution.
             outputs = outputs / temperature
