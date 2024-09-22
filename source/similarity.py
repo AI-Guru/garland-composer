@@ -123,6 +123,9 @@ def fill_database():
 
 
 def find_similar_samples(token_sequence, top_n=10):
+
+    if not os.path.exists("database.db"):
+        return "UNKNOWN"
     
     # Connect to the database.
     connection = sqlite3.connect("database.db")

@@ -25,6 +25,7 @@ from source.utilities import (
     convert_notesequence_to_wave,
     convert_notesequence_to_midi
 )
+from source.similarity import find_similar_samples
 
 # Set the page layout to "wide"
 st.set_page_config(layout="wide")
@@ -35,6 +36,14 @@ midi_instruments = {
     "Church Organ": 19,
     "Piano": 0,
 }
+
+available_models = [
+    "TristanBehrens/bach-garland-mambaplus",
+    "TristanBehrens/bach-garland-pharia",
+    "TristanBehrens/bach-garland-phariaplus",
+    "TristanBehrens/bach-garland-phariaplusplus",
+    "TristanBehrens/bach-garland-phariaplusplus-1epoch"
+]
 
 # Load the model once and cache it.
 @st.cache_resource
@@ -60,6 +69,8 @@ if "token_sequence" not in st.session_state:
     st.session_state.temperature = 0.1
     st.session_state.bpm = 100
     st.session_state.instrument = "Piano"
+    st.session_state.random_seed = -1
+    st.session_state.similarity_score = 0.0
 
 
 # Define the main function.
@@ -95,7 +106,7 @@ def main():
     st.markdown("---")
 
     # Create two columns.
-    columns = st.columns(3)
+    columns = st.columns(4)
 
     # Add a slider to control the temperature.
     state_temperature = st.session_state.temperature
@@ -114,12 +125,18 @@ def main():
     with columns.pop(0):
         instrument = st.selectbox("Instrument", list(midi_instruments.keys()), index=list(midi_instruments.keys()).index(state_instrument))
     st.session_state.instrument = instrument
-    
+
+    # Text field for the seed.
+    random_seed = st.session_state.random_seed
+    with columns.pop(0):
+        random_seed = st.text_area("Seed", st.session_state.random_seed)
+    st.session_state.random_seed = random_seed
+
     # Get the token sequence from the session state.
     token_sequence = st.session_state.token_sequence
 
     # Columns for the buttons.
-    columns = st.columns(7)
+    columns = st.columns(8)
 
     # Add a button to generate the next bar.
     column = columns.pop(0)
@@ -195,10 +212,13 @@ def main():
     st.markdown("---")
 
     # Set the text color to (255, 31, 75).
+    footer_text = None
     if token_sequence.endswith("GARLAND_END"):
-        st.write("The AI believes that the music is finished.")
+        footer_text = "The AI believes that the music is finished."
     else:
-        st.write("The AI believes that the music is not finished.")
+        footer_text = "The AI believes that the music is not finished."
+    footer_text += f" The similarity score is {st.session_state.similarity_score:.4f}."
+    st.write(footer_text)
 
 
 
@@ -245,6 +265,18 @@ def extend_sequence(model, token_sequence, temperature):
 
     # When to stop the generation.
     end_tokens = ["NEXT", "GARLAND_END"]
+
+    # Set the random seed.
+    import random, torch, numpy as np
+    random_seed = st.session_state.random_seed
+    try:
+        random_seed = int(random_seed)
+    except:
+        random_seed = -1
+    if random_seed != -1:
+        random.seed(random_seed)
+        torch.manual_seed(random_seed)
+        np.random.seed(random_seed)
 
     # Compose the music iterativelybar by bar.
     output_dict = model.generate(
@@ -295,6 +327,13 @@ def refresh(token_sequence="GARLAND_START", bpm=120, instrument="Piano"):
 
         # Get the MIDI file content.
         midi_file_content = convert_notesequence_to_midi(note_sequence)
+
+        # Compute the similarity score.
+        if token_sequence != "GARLAND_START":
+            similarity_score = find_similar_samples(token_sequence, top_n=10)
+        else:
+            similarity_score = 0.0
+
     
     except Exception as e:
         st.error(f"An error occurred: {e}")
@@ -307,6 +346,7 @@ def refresh(token_sequence="GARLAND_START", bpm=120, instrument="Piano"):
     st.session_state.note_sequence = note_sequence
     st.session_state.wave = wave
     st.session_state.midi_file_content = midi_file_content
+    st.session_state.similarity_score = similarity_score
 
     # Rerun the app.
     st.rerun()
