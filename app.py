@@ -308,12 +308,12 @@ def extend_sequence(model, token_sequence, temperature):
     import librosa
     forbidden_tokens = [f"NOTE_ON={pitch}" for pitch in forbidden_pitches]
     forbidden_tokens_readable = [f"{root_note}{mode}"] + [librosa.midi_to_note(pitch) for pitch in forbidden_pitches]
-    print(f"Forbidden pitches: {forbidden_tokens_readable}")
+    #print(f"Forbidden pitches: {forbidden_tokens_readable}")
 
     allowed_pitches = musictheory.get_pitches(root_note, mode)
     allowed_tokens = [f"NOTE_ON={pitch}" for pitch in allowed_pitches]
     allowed_tokens_readable = [librosa.midi_to_note(pitch) for pitch in allowed_pitches]
-    print(f"Allowed pitches: {allowed_tokens_readable}")
+    #print(f"Allowed pitches: {allowed_tokens_readable}")
 
     # Compose the music iterativelybar by bar.
     output_dict = model.generate(
